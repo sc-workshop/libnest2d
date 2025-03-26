@@ -47,7 +47,7 @@ public:
                        const Range& = Range())
     {
         auto r = _trypack(item);
-        if(!r && Base::config_.allow_rotations) {
+        if(!r && Base::m_config.allow_rotations) {
 
             item.rotate(Degrees(90));
             r =_trypack(item);
@@ -88,7 +88,7 @@ protected:
         setInitialPosition(item);
 
         Coord d = availableSpaceDown(item);
-        auto eps = config_.epsilon;
+        auto eps = m_config.epsilon;
         bool can_move = d > eps;
         bool can_be_packed = can_move;
         bool left = true;
@@ -110,8 +110,8 @@ protected:
         if(can_be_packed) {
             Item trsh(item.transformedShape());
             for(auto& v : trsh) can_be_packed = can_be_packed &&
-                    getX(v) < bin_.width() &&
-                    getY(v) < bin_.height();
+                    getX(v) < m_bin.width() &&
+                    getY(v) < m_bin.height();
         }
 
         return can_be_packed? PackResult(item) : PackResult();
@@ -123,8 +123,8 @@ protected:
         Vertex v = { getX(bb.maxCorner()), getY(bb.minCorner()) };
 
 
-        Coord dx = getX(bin_.maxCorner()) - getX(v);
-        Coord dy = getY(bin_.maxCorner()) - getY(v);
+        Coord dx = getX(m_bin.maxCorner()) - getX(v);
+        Coord dy = getY(m_bin.maxCorner()) - getY(v);
 
         item.translate({dx, dy});
     }
@@ -169,7 +169,7 @@ protected:
                                             downPoly(item);
 
         ItemGroup ret;    // packed items 'in the way' of item
-        ret.reserve(items_.size());
+        ret.reserve(m_items.size());
 
         // Predicate to find items that are 'in the way' for left (down) move
         auto predicate = [&scanpoly, &item](const Item& it) {
@@ -177,7 +177,7 @@ protected:
         };
 
         // Get the items that are in the way for the left (or down) movement
-        std::copy_if(items_.begin(), items_.end(),
+        std::copy_if(m_items.begin(), m_items.end(),
                      std::back_inserter(ret), predicate);
 
         return ret;

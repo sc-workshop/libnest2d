@@ -45,21 +45,21 @@ public:
         double overfit() const { return overfit_; }
     };
 
-    inline PlacerBoilerplate(const BinType& bin, unsigned cap = 50): bin_(bin)
+    inline PlacerBoilerplate(const BinType& bin, unsigned cap = 50): m_bin(bin)
     {
-        items_.reserve(cap);
+        m_items.reserve(cap);
         binarea_ = sl::area(bin);
     }
 
-    inline const BinType& bin() const BP2D_NOEXCEPT { return bin_; }
+    inline const BinType& bin() const BP2D_NOEXCEPT { return m_bin; }
 
     template<class TB> inline void bin(TB&& b) {
-        bin_ = std::forward<BinType>(b);
-        binarea_ = sl::area(bin_)
+        m_bin = std::forward<BinType>(b);
+        binarea_ = sl::area(m_bin)
     }
 
     inline void configure(const Config& config) BP2D_NOEXCEPT {
-        config_ = config;
+        m_config = config;
     }
 
     template<class Range = ConstItemRange<DefaultIter>>
@@ -68,7 +68,7 @@ public:
 
         PackResult&& r = static_cast<Subclass*>(this)->trypack(item, rem);
         if(r) {
-            items_.emplace_back(*(r.item_ptr_));
+            m_items.emplace_back(*(r.item_ptr_));
             farea_ += item.area();
         }
         return r;
@@ -80,14 +80,14 @@ public:
 	}
 
     void preload(const ItemGroup& packeditems) {
-        items_.insert(items_.end(), packeditems.begin(), packeditems.end());
+        m_items.insert(m_items.end(), packeditems.begin(), packeditems.end());
     }
 
     void accept(PackResult& r) {
         if(r) {
             r.item_ptr_->translation(r.move_);
             r.item_ptr_->rotation(r.rot_);
-            items_.emplace_back(*(r.item_ptr_));
+            m_items.emplace_back(*(r.item_ptr_));
             farea_ += (*(r.item_ptr_)).area();
 
             static_cast<Subclass*>(this)->acceptResult(r);
@@ -102,14 +102,14 @@ public:
     }
 
     void unpackLast() {
-        items_.pop_back();
+        m_items.pop_back();
         farea_valid_ = false;
     }
 
-    inline const ItemGroup& getItems() const { return items_; }
+    inline const ItemGroup& getItems() const { return m_items; }
 
     inline void clearItems() {
-        items_.clear();
+        m_items.clear();
     }
 
     inline double filledArea() const {
@@ -123,16 +123,16 @@ public:
 
 protected:
 
-    BinType bin_;
-    ItemGroup items_;
-    Cfg config_;
+    BinType m_bin;
+    ItemGroup m_items;
+    Cfg m_config;
 };
 
 
 #define DECLARE_PLACER(Base) \
-using Base::bin_;                 \
-using Base::items_;               \
-using Base::config_;              \
+using Base::m_bin;                 \
+using Base::m_items;               \
+using Base::m_config;              \
 public:                           \
 using typename Base::ShapeType;   \
 using typename Base::Item;        \

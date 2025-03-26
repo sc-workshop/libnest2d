@@ -773,7 +773,7 @@ public:
     using ResultType = PackGroup;
 
 private:
-    BinType bin_;
+    BinType m_bin;
     PlacementConfig pconfig_;
     Coord min_obj_distance_;
 
@@ -802,7 +802,7 @@ public:
              class SConf = SelectionConfig>
     _Nester(TBinType&& bin, Coord min_obj_distance = 0,
             const PConf& pconfig = PConf(), const SConf& sconfig = SConf()):
-        bin_(std::forward<TBinType>(bin)),
+        m_bin(std::forward<TBinType>(bin)),
         pconfig_(pconfig),
         min_obj_distance_(min_obj_distance)
     {
@@ -844,7 +844,7 @@ public:
         });
         
         selector_.template packItems<PlacementStrategy>(
-            from, to, bin_, pconfig_);
+            from, to, m_bin, pconfig_);
         
         if(min_obj_distance_ > 0) std::for_each(from, to, [infl](Item& item) {
             item.inflate(-infl);

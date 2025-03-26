@@ -96,7 +96,7 @@ private:
 
     using Container = ItemGroup;
     Container store_;
-    Config config_;
+    Config m_config;
 
     static const unsigned MAX_ITEMS_SEQUENTIALLY = 30;
     static const unsigned MAX_VERTICES_SEQUENTIALLY = MAX_ITEMS_SEQUENTIALLY*20;
@@ -104,7 +104,7 @@ private:
 public:
 
     inline void configure(const Config& config) {
-        config_ = config;
+        m_config = config;
     }
 
     template<class TPlacer, class TIterator,
@@ -119,9 +119,9 @@ public:
         using ItemList = std::list<ItemRef>;
 
         const double bin_area = sl::area(bin);
-        const double w = bin_area * config_.waste_increment;
+        const double w = bin_area * m_config.waste_increment;
 
-        const double INITIAL_FILL_PROPORTION = config_.initial_fill_proportion;
+        const double INITIAL_FILL_PROPORTION = m_config.initial_fill_proportion;
         const double INITIAL_FILL_AREA = bin_area*INITIAL_FILL_PROPORTION;
 
         store_.clear();
@@ -144,7 +144,7 @@ public:
 
         std::vector<Placer> placers;
 
-        bool try_reverse = config_.try_reverse_order;
+        bool try_reverse = m_config.try_reverse_order;
 
         // Will use a subroutine to add a new bin
         auto addBin = [this, &placers, &bin, &pconfig]()
@@ -576,15 +576,15 @@ public:
         auto bincount_guess = unsigned(std::ceil(items_area / bin_area));
 
         // Do parallel if feasible
-        bool do_parallel = config_.allow_parallel && bincount_guess > 1 &&
+        bool do_parallel = m_config.allow_parallel && bincount_guess > 1 &&
                 ((glob_vertex_count >  MAX_VERTICES_SEQUENTIALLY ||
                  store_.size() > MAX_ITEMS_SEQUENTIALLY) ||
-                config_.force_parallel);
+                m_config.force_parallel);
 
         if(do_parallel) dout() << "Parallel execution..." << "\n";
 
-        bool do_pairs = config_.try_pairs;
-        bool do_triplets = config_.try_triplets;
+        bool do_pairs = m_config.try_pairs;
+        bool do_triplets = m_config.try_triplets;
         StopCondition stopcond = this->stopcond_;
 
         // The DJD heuristic algorithm itself:

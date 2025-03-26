@@ -17,9 +17,6 @@
 
 #include "placer_boilerplate.hpp"
 
-// temporary
-//#include "../tools/svgtools.hpp"
-
 #include <libnest2d/parallel.hpp>
 
 namespace libnest2d {
@@ -29,10 +26,12 @@ namespace libnest2d {
         struct NfpPConfig {
 
             using ItemGroup = _ItemGroup<RawShape>;
-            using ObjectCallback = std::function<void(const nfp::Shapes<RawShape>&,   // merged pile
-                const ItemGroup&,                                               // packed items
-                const ItemGroup&                                                // remaining items
-                )>;
+            using ObjectCallback = std::function<void(const nfp::Shapes<RawShape>&, // merged pile
+                const ItemGroup&,                                                   // packed items
+                const ItemGroup&                                                    // remaining items
+            )>;
+
+            using RotationCallback = std::function<std::vector<Radians>(const _Item<RawShape>&)>;
 
             enum class Alignment {
                 CENTER,
@@ -119,6 +118,8 @@ namespace libnest2d {
             ObjectCallback before_packing;
             ObjectCallback after_packing;
 
+            RotationCallback rotation_callback;
+
             std::function<void(const ItemGroup&, NfpPConfig& config)> on_preload;
 
             NfpPConfig() : rotations({ 0.0, Pi / 2.0, Pi, 3 * Pi / 2 }),
@@ -137,7 +138,8 @@ namespace libnest2d {
          *
          * We also have to make this work for the holes of the captured polygon.
          */
-        template<class RawShape> class EdgeCache {
+        template<class RawShape> 
+        class EdgeCache {
             using Vertex = TPoint<RawShape>;
             using Coord = TCoord<Vertex>;
             using Edge = _Segment<Vertex>;
@@ -327,7 +329,8 @@ namespace libnest2d {
         struct Lvl { static const nfp::NfpLevel value = lvl; };
 
         template<class RawShape>
-        inline void correctNfpPosition(nfp::NfpResult<RawShape>& nfp,
+        inline void correctNfpTransform(
+            nfp::NfpResult<RawShape>& nfp,
             const _Item<RawShape>& stationary,
             const _Item<RawShape>& orbiter)
         {
@@ -351,7 +354,8 @@ namespace libnest2d {
         }
 
         template<class RawShape>
-        inline void correctNfpPosition(nfp::NfpResult<RawShape>& nfp,
+        inline void correctNfpTransform(
+            nfp::NfpResult<RawShape>& nfp,
             const RawShape& stationary,
             const _Item<RawShape>& orbiter)
         {
@@ -422,8 +426,9 @@ namespace libnest2d {
         }
 
         template<class RawShape, class TBin = _Box<TPoint<RawShape>>>
-        class _NofitPolyPlacer : public PlacerBoilerplate<_NofitPolyPlacer<RawShape, TBin>,
-            RawShape, TBin, NfpPConfig<RawShape>> {
+        class _NofitPolyPlacer : 
+            public PlacerBoilerplate<_NofitPolyPlacer<RawShape, TBin>, RawShape, TBin, NfpPConfig<RawShape>> 
+        {
 
             using Base = PlacerBoilerplate<_NofitPolyPlacer<RawShape, TBin>,
                 RawShape, TBin, NfpPConfig<RawShape>>;
@@ -431,7 +436,6 @@ namespace libnest2d {
             DECLARE_PLACER(Base)
 
             using Box = _Box<TPoint<RawShape>>;
-
             using MaxNfpLevel = nfp::MaxNfpLevel<RawShape>;
 
         public:
@@ -450,9 +454,6 @@ namespace libnest2d {
                 Base(bin),
                 m_norming_factor(std::sqrt(sl::area(bin)))
             {
-                // In order to not have items out of bin, it will be shrinked by an
-                // very little empiric offset value.
-                // sl::offset(bin_, 1e-5 * norm_);
             }
 
             _NofitPolyPlacer(const _NofitPolyPlacer&) = default;
@@ -464,20 +465,20 @@ namespace libnest2d {
 #endif
 
             static inline double overfit(const Box& bb, const RawShape& bin) {
-                auto bbin = sl::boundingBox(bin);
-                auto d = bbin.center() - bb.center();
+                auto hull_bb = sl::boundingBox(bin);
+                auto difference = hull_bb.center() - bb.center();
                 _Rectangle<RawShape> rect(bb.width(), bb.height());
-                rect.translate(bb.minCorner() + d);
-                return sl::isInside(rect.transformedShape(), bin) ? -1.0 : 1;
+                rect.translate(bb.minCorner() + difference);
+                return sl::isInside(rect.transformedShape(), bin) ? -1.0 : 1.0;
             }
 
             static inline double overfit(const RawShape& chull, const RawShape& bin) {
-                auto bbch = sl::boundingBox(chull);
-                auto bbin = sl::boundingBox(bin);
-                auto d = bbch.center() - bbin.center();
-                auto chullcpy = chull;
-                sl::translate(chullcpy, d);
-                return sl::isInside(chullcpy, bin) ? -1.0 : 1.0;
+                auto hull_bb = sl::boundingBox(chull);
+                auto bin_bb = sl::boundingBox(bin);
+                auto difference = hull_bb.center() - bin_bb.center();
+                auto hull_copy = chull;
+                sl::translate(hull_copy, difference);
+                return sl::isInside(hull_copy, bin) ? -1.0 : 1.0;
             }
 
             static inline double overfit(const RawShape& chull, const Box& bin)
@@ -504,8 +505,7 @@ namespace libnest2d {
                 return diff;
             }
 
-            static inline double overfit(const RawShape& chull,
-                const _Circle<Vertex>& bin)
+            static inline double overfit(const RawShape& chull, const _Circle<Vertex>& bin)
             {
                 double r = boundingCircle(chull).radius();
                 double diff = r - bin.radius();
@@ -528,14 +528,14 @@ namespace libnest2d {
             }
 
             inline void clearItems() {
-                finalAlign(bin_);
+                finalAlign(m_bin);
                 Base::clearItems();
             }
 
             void preload(const ItemGroup& packeditems) {
                 Base::preload(packeditems);
-                if (config_.on_preload)
-                    config_.on_preload(packeditems, config_);
+                if (m_config.on_preload)
+                    m_config.on_preload(packeditems, m_config);
             }
 
             void acceptResult (PackResult& r)
@@ -547,48 +547,47 @@ namespace libnest2d {
             }
 
         private:
-
             using Shapes = TMultiShape<RawShape>;
+            using Edges = EdgeCache<RawShape>;
 
-            Shapes calcnfp(const Item& trsh, Lvl<nfp::NfpLevel::CONVEX_ONLY>)
+            Shapes calculateNfp(const Item& input, Lvl<nfp::NfpLevel::CONVEX_ONLY>)
             {
                 using namespace nfp;
 
-                Shapes nfps(items_.size());
+                Shapes nfps(m_items.size());
 
                 // /////////////////////////////////////////////////////////////////////
                 // TODO: this is a workaround and should be solved in Item with mutexes
                 // guarding the mutable members when writing them.
                 // /////////////////////////////////////////////////////////////////////
-                trsh.transformedShape();
-                trsh.referenceVertex();
-                trsh.rightmostTopVertex();
-                trsh.leftmostBottomVertex();
+                input.transformedShape();
+                input.referenceVertex();
+                input.rightmostTopVertex();
+                input.leftmostBottomVertex();
 
-                for (Item& itm : items_) {
-                    itm.transformedShape();
-                    itm.referenceVertex();
-                    itm.rightmostTopVertex();
-                    itm.leftmostBottomVertex();
+                for (Item& item : m_items) {
+                    item.transformedShape();
+                    item.referenceVertex();
+                    item.rightmostTopVertex();
+                    item.leftmostBottomVertex();
                 }
                 // /////////////////////////////////////////////////////////////////////
 
-                __parallel::enumerate(items_.begin(), items_.end(),
-                    [&nfps, &trsh](const Item& sh, size_t n)
+                __parallel::enumerate(m_items.begin(), m_items.end(),
+                    [&nfps, &input](const Item& item, size_t n)
                     {
-                        auto& fixedp = sh.transformedShape();
-                        auto& orbp = trsh.transformedShape();
+                        auto& fixedp = item.transformedShape();
+                        auto& orbp = input.transformedShape();
                         auto subnfp_r = noFitPolygon<NfpLevel::CONVEX_ONLY>(fixedp, orbp);
-                        correctNfpPosition(subnfp_r, sh, trsh);
+                        correctNfpTransform(subnfp_r, item, input);
                         nfps[n] = subnfp_r.first;
-                    }, config_.parallel);
+                    }, m_config.parallel);
 
                 return nfp::merge(nfps);
             }
 
-
             template<class Level>
-            Shapes calcnfp(const Item& trsh, Level)
+            Shapes calculateNfp(const Item& trsh, Level)
             { // Function for arbitrary level of nfp implementation
 
                 // TODO: implement
@@ -625,8 +624,6 @@ namespace libnest2d {
                 }
             };
 
-            using Edges = EdgeCache<RawShape>;
-
             template<class Range = ConstItemRange<typename Base::DefaultIter>>
             PackResult _trypack(
                 Item& item,
@@ -647,9 +644,8 @@ namespace libnest2d {
                 auto initial_rotation = item.rotation();
                 Vertex final_translation = { 0, 0 };
                 Radians final_rotation = initial_rotation;
-                //Shapes nfps;
 
-                auto& bin = bin_;
+                auto& bin = m_bin;
                 double norm = m_norming_factor;
                 auto pilebb = sl::boundingBox(m_merged_pile);
                 auto binbb = sl::boundingBox(bin);
@@ -657,12 +653,12 @@ namespace libnest2d {
                 // This is the kernel part of the object function that is
                 // customizable by the library client
                 std::function<double(const Item&)> object_function;
-                if (config_.object_function) object_function = config_.object_function;
+                if (m_config.object_function) object_function = m_config.object_function;
                 else {
 
                     // Inside check has to be strict if no alignment was enabled
                     std::function<double(const Box&)> ins_check;
-                    if (config_.alignment == Config::Alignment::DONT_ALIGN)
+                    if (m_config.alignment == Config::Alignment::DONT_ALIGN)
                         ins_check = [&binbb, norm](const Box& fullbb) {
                         double result = 0;
                         if (!sl::isInside(fullbb, binbb))
@@ -692,21 +688,21 @@ namespace libnest2d {
                         };
                 }
 
-				if (config_.before_packing)
-					config_.before_packing(m_merged_pile, items_, remains);
+				if (m_config.before_packing)
+					m_config.before_packing(m_merged_pile, m_items, remains);
 
-                if (items_.empty()) {
+                if (m_items.empty()) {
                     setInitialPosition(item);
                     auto best_translation = item.translation();
                     auto best_rotation = item.rotation();
-                    best_overfit = overfit(item.transformedShape(), bin_);
+                    best_overfit = overfit(item.transformedShape(), m_bin);
 
-                    for (auto rot : config_.rotations) {
+                    for (auto rot : m_config.rotations) {
                         item.translation(initial_translation);
                         item.rotation(initial_rotation + rot);
                         setInitialPosition(item);
                         double current_overfit = 0.;
-                        if ((current_overfit = overfit(item.transformedShape(), bin_)) < best_overfit) {
+                        if ((current_overfit = overfit(item.transformedShape(), m_bin)) < best_overfit) {
                             best_overfit = current_overfit;
                             best_translation = item.translation();
                             best_rotation = item.rotation();
@@ -718,13 +714,12 @@ namespace libnest2d {
                     item.translation(best_translation);
                 }
                 else {
-
-                    //Pile merged_pile = m_merged_pile;
+                    std::vector<Radians> rotations = m_config.rotation_callback ? m_config.rotation_callback(item) : m_config.rotations;
 
                     std::vector<ResultCandidate> candidates;
-                    candidates.resize(config_.rotations.size());
+                    candidates.resize(rotations.size());
 
-                    __parallel::enumerate(config_.rotations.begin(), config_.rotations.end(), 
+                    __parallel::enumerate(rotations.begin(), rotations.end(),
                         [&object_function, &bin, &item, &candidates, &initial_rotation, &initial_translation, this](double rotation, size_t n)
                         {
                             Pile merged_pile = m_merged_pile;
@@ -735,26 +730,25 @@ namespace libnest2d {
                             current_item.rotation(initial_rotation + rotation);
                             current_item.boundingBox(); // fill the bb cache
 
-							Shapes nfps = calcnfp(current_item, Lvl<MaxNfpLevel::value>());
+							Shapes nfps = calculateNfp(current_item, Lvl<MaxNfpLevel::value>());
 
-							auto iv = current_item.referenceVertex();
-
-							auto startpos = current_item.translation();
+							auto nearest_vertex = current_item.referenceVertex();
+							auto start_position = current_item.translation();
 
 							std::vector<Edges> ecache;
 							ecache.reserve(nfps.size());
 
 							for (auto& nfp : nfps) {
 								ecache.emplace_back(nfp);
-								ecache.back().accuracy(config_.accuracy);
+								ecache.back().accuracy(m_config.accuracy);
 							}
 
 							// Our object function for placement
-							auto rawobjfunc = [object_function, iv, startpos]
+							auto rawobjfunc = [object_function, nearest_vertex, start_position]
 							(Vertex v, Item& itm)
 								{
-									auto d = v - iv;
-									d += startpos;
+									auto d = v - nearest_vertex;
+									d += start_position;
 									itm.translation(d);
 									return object_function(itm);
 								};
@@ -765,14 +759,14 @@ namespace libnest2d {
 										ecache[opt.nfpidx].coords(opt.hidx, opt.relpos);
 								};
 
-							auto alignment = config_.alignment;
+							auto alignment = m_config.alignment;
 
 							auto boundaryCheck = [alignment, &merged_pile, &getNfpPoint,
-								&current_item, &bin, &iv, &startpos](const Optimum& o)
+								&current_item, &bin, &nearest_vertex, &start_position](const Optimum& o)
 								{
 									auto v = getNfpPoint(o);
-									auto d = v - iv;
-									d += startpos;
+									auto d = v - nearest_vertex;
+									d += start_position;
                                     current_item.translation(d);
 
 									merged_pile.emplace_back(current_item.transformedShape());
@@ -802,7 +796,7 @@ namespace libnest2d {
 
 								auto& rofn = rawobjfunc;
 								auto& nfpoint = getNfpPoint;
-								float accuracy = config_.accuracy;
+								float accuracy = m_config.accuracy;
 
                                 __parallel::enumerate(
                                     cache.corners().begin(),
@@ -829,7 +823,7 @@ namespace libnest2d {
                                         catch (std::exception& e) {
                                             derr() << "ERROR: " << e.what() << "\n";
                                         }
-                                    }, config_.parallel);
+                                    }, m_config.parallel);
 
                                 auto resultcomp =
                                     [](const OptResult& r1, const OptResult& r2) {
@@ -883,7 +877,7 @@ namespace libnest2d {
                                             catch (std::exception& e) {
                                                 derr() << "ERROR: " << e.what() << "\n";
                                             }
-                                        }, config_.parallel);
+                                        }, m_config.parallel);
 
                                     auto hmr = *std::min_element(results.begin(),
                                         results.end(),
@@ -905,8 +899,8 @@ namespace libnest2d {
                             }
 
                             {
-								auto nfp_point = getNfpPoint(optimum) - iv;
-								nfp_point += startpos;
+								auto nfp_point = getNfpPoint(optimum) - nearest_vertex;
+								nfp_point += start_position;
 
                                 ResultCandidate& candidate = candidates[n];
                                 candidate.score = best_score;
@@ -914,7 +908,7 @@ namespace libnest2d {
                                 candidate.final_rotation = initial_rotation + rotation;
                                 candidate.best_overfit = best_local_overfit;
                             }
-                        }, config_.parallel);
+                        }, m_config.parallel);
 
                     auto best_candidate = std::min_element(candidates.begin(), candidates.end(),
                         [](const ResultCandidate& r1, const ResultCandidate& r2) {
@@ -946,42 +940,45 @@ namespace libnest2d {
                     ret = PackResult(best_overfit);
                 }
 
-				if (config_.after_packing)
-					config_.after_packing(m_merged_pile, items_, remains);
+				if (m_config.after_packing)
+					m_config.after_packing(m_merged_pile, m_items, remains);
 
                 return ret;
             }
 
+            // Polygon Align
             inline void finalAlign(const RawShape& pbin) {
                 auto bbin = sl::boundingBox(pbin);
                 finalAlign(bbin);
             }
 
+            // Circle Align
             inline void finalAlign(_Circle<TPoint<RawShape>> cbin) {
-                if (items_.empty() ||
-                    config_.alignment == Config::Alignment::DONT_ALIGN) return;
+                if (m_items.empty() ||
+                    m_config.alignment == Config::Alignment::DONT_ALIGN) return;
 
                 nfp::Shapes<RawShape> m;
-                m.reserve(items_.size());
-                for (Item& item : items_) m.emplace_back(item.transformedShape());
+                m.reserve(m_items.size());
+                for (Item& item : m_items) m.emplace_back(item.transformedShape());
 
                 auto c = boundingCircle(sl::convexHull(m));
 
                 auto d = cbin.center() - c.center();
-                for (Item& item : items_) item.translate(d);
+                for (Item& item : m_items) item.translate(d);
             }
 
+            // Box Align
             inline void finalAlign(Box bbin) {
-                if (items_.empty() ||
-                    config_.alignment == Config::Alignment::DONT_ALIGN) return;
+                if (m_items.empty() ||
+                    m_config.alignment == Config::Alignment::DONT_ALIGN) return;
 
-                Box bb = items_.front().get().boundingBox();
-                for (Item& item : items_)
+                Box bb = m_items.front().get().boundingBox();
+                for (Item& item : m_items)
                     bb = sl::boundingBox(item.boundingBox(), bb);
 
                 Vertex ci, cb;
 
-                switch (config_.alignment) {
+                switch (m_config.alignment) {
                 case Config::Alignment::CENTER: {
                     ci = bb.center();
                     cb = bbin.center();
@@ -1011,16 +1008,16 @@ namespace libnest2d {
                 }
 
                 auto d = cb - ci;
-                for (Item& item : items_) item.translate(d);
+                for (Item& item : m_items) item.translate(d);
             }
 
             void setInitialPosition(Item& item) {
                 Box bb = item.boundingBox();
 
                 Vertex ci, cb;
-                auto bbin = sl::boundingBox(bin_);
+                auto bbin = sl::boundingBox(m_bin);
 
-                switch (config_.starting_point) {
+                switch (m_config.starting_point) {
                 case Config::Alignment::CENTER: {
                     ci = bb.center();
                     cb = bbin.center();
@@ -1055,7 +1052,7 @@ namespace libnest2d {
 
             void placeOutsideOfBin(Item& item) {
                 auto&& bb = item.boundingBox();
-                Box binbb = sl::boundingBox(bin_);
+                Box binbb = sl::boundingBox(m_bin);
 
                 Vertex v = { getX(bb.maxCorner()), getY(bb.minCorner()) };
 
@@ -1064,10 +1061,7 @@ namespace libnest2d {
 
                 item.translate({ dx, dy });
             }
-
         };
-
-
     }
 }
 

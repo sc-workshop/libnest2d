@@ -28,6 +28,12 @@ inline void enumerate(
     auto iN = to-from;
     TN N = iN < 0? 0 : TN(iN);
 
+    if (std::distance(from, to) == 1)
+    {
+        fn(*from, 0);
+        return;
+    }
+
     if (parallel)
     {
 #ifdef LIBNEST2D_THREADING_tbb

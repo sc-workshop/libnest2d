@@ -45,12 +45,12 @@ private:
     using Container = ItemGroup;//typename std::vector<_Item<RawShape>>;
 
     Container store_;
-    Config config_;
+    Config m_config;
 
 public:
 
 	inline void configure(const Config& config) {
-		config_ = config;
+		m_config = config;
 	}
 
     template<class TPlacer, class TIterator,
@@ -109,7 +109,7 @@ public:
 
         auto& cancelled = this->stopcond_;
         
-        if (config_.verify_items)
+        if (m_config.verify_items)
         {
             this->template remove_unpackable_items<Placer>(store_, bin, pconfig);
         }
@@ -139,7 +139,7 @@ public:
 						return placer.trypack(item, remains);
 					};
 
-                if (config_.texture_parallel)
+                if (m_config.texture_parallel)
                 {
                     std::future<Placer::PackResult> next_texture_result;
 					for (; j < placers.size() && !was_packed && !cancelled(); j++) {
@@ -165,7 +165,7 @@ public:
 						do_accept(current_placer, j);
 					}
                 }
-                else if (config_.texture_parallel_hard)
+                else if (m_config.texture_parallel_hard)
                 {
 					std::vector<std::future<Placer::PackResult>> placer_results(placers.size());
 
