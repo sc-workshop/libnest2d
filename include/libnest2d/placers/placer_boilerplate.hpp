@@ -55,7 +55,7 @@ public:
 
     template<class TB> inline void bin(TB&& b) {
         m_bin = std::forward<BinType>(b);
-        binarea_ = sl::area(m_bin)
+        binarea_ = sl::area(m_bin);
     }
 
     inline void configure(const Config& config) BP2D_NOEXCEPT {
@@ -103,7 +103,6 @@ public:
 
     void unpackLast() {
         m_items.pop_back();
-        farea_valid_ = false;
     }
 
     inline const ItemGroup& getItems() const { return m_items; }

@@ -122,7 +122,7 @@ public:
 			auto& item = *it;
 			auto remains = rem(it, store_);
 
-            Placer::PackResult candidate;
+            typename Placer::PackResult candidate;
             while(!was_packed && !cancelled()) {
                 auto do_accept = [&makeProgress, &placers, &candidate, &item, &was_packed](Placer& placer, size_t index)
                     {
@@ -134,14 +134,14 @@ public:
 						makeProgress(placers[index], index);
                     };
 
-				auto do_pack = [&item, &remains](Placer& placer) -> Placer::PackResult // TODO: add some kind of stop condition to stop async operations when was_packed already is true
+				auto do_pack = [&item, &remains](Placer& placer) -> typename Placer::PackResult // TODO: add some kind of stop condition to stop async operations when was_packed already is true
 					{
 						return placer.trypack(item, remains);
 					};
 
                 if (m_config.texture_parallel)
                 {
-                    std::future<Placer::PackResult> next_texture_result;
+                    std::future<typename Placer::PackResult> next_texture_result;
 					for (; j < placers.size() && !was_packed && !cancelled(); j++) {
 						Placer& current_placer = placers[j];
 
