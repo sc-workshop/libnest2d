@@ -144,13 +144,17 @@ public:
     inline double toRadians() { return Radians(*this);}
 };
 
-inline bool operator==(const Degrees& deg, const Radians& rads) {
+template<typename T>
+    requires std::is_same_v<T, Degrees>
+inline bool operator==(const T& deg, const Radians& rads) {
     Degrees deg2 = rads;
     auto diff = std::abs(deg - deg2);
     return diff < 0.0001;
 }
 
-inline bool operator==(const Radians& rads, const Degrees& deg) {
+template<typename T>
+    requires std::is_same_v<T, Radians>
+inline bool operator==(const T& rads, const Degrees& deg) {
     return deg == rads;
 }
 

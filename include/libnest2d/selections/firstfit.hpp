@@ -148,7 +148,7 @@ public:
 						// if not first or last placer
 						if (j != placers.size() - 1)
 						{
-							next_texture_result = std::async(std::launch::deferred | std::launch::async, do_pack, placers[j + 1]);
+							next_texture_result = std::async(std::launch::deferred | std::launch::async, do_pack, std::ref(placers[j + 1]));
 						}
 
 						// if placer is first then use sync packaging
@@ -167,13 +167,13 @@ public:
                 }
                 else if (m_config.texture_parallel_hard)
                 {
-					std::vector<std::future<Placer::PackResult>> placer_results(placers.size());
+					std::vector<std::future<typename Placer::PackResult>> placer_results(placers.size());
 
 					for (size_t i = 0; placer_results.size() > i; i++)
 					{
                         if (placers[i].canPack(item))
                         {
-                            placer_results[i] = std::async(std::launch::deferred | std::launch::async, do_pack, placers[i]);
+                            placer_results[i] = std::async(std::launch::deferred | std::launch::async, do_pack, std::ref(placers[i]));
                         }
 					}
 
