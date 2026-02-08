@@ -451,7 +451,7 @@ inline Unit _Segment<P>::sqlength() const
 }
 
 template<class T>
-enable_if_t<std::is_floating_point<T>::value, T> modulo(const T &v, const T &m)
+enable_if_t<std::is_floating_point<T>::value, T> modulo(const T &, const T &)
 {
     return 0;
 }

@@ -1,4 +1,14 @@
-find_package(OpenMP REQUIRED)
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    if (${BUILD_SHARED_LIBS})
+        set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib")
+    else()
+        set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.a")
+    endif()
+endif()
+
+find_package(OpenMP REQUIRED COMPONENTS CXX)
 
 add_library(ompThreading INTERFACE)
 target_link_libraries(ompThreading INTERFACE OpenMP::OpenMP_CXX)

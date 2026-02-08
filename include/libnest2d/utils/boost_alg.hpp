@@ -473,8 +473,8 @@ template<> inline std::string serialize<libnest2d::Formats::SVG>(
 #ifndef DISABLE_BOOST_UNSERIALIZE
 template<>
 inline void unserialize<libnest2d::Formats::SVG>(
-        PolygonImpl& sh,
-        const std::string& str)
+        PolygonImpl&,
+        const std::string&)
 {
 }
 #endif

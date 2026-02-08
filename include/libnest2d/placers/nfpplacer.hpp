@@ -611,7 +611,7 @@ namespace libnest2d {
             }
 
             template<class Level>
-            Shapes calculateNfp(const Item& trsh, Level)
+            Shapes calculateNfp(const Item&, Level)
             { // Function for arbitrary level of nfp implementation
 
                 // TODO: implement

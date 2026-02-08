@@ -55,7 +55,7 @@ public:
         return r;
     }
 
-	void acceptResult(PackResult& item)
+	void acceptResult(PackResult&)
 	{
 	}
 
