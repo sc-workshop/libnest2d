@@ -327,6 +327,30 @@ namespace libnest2d {
 
         template<nfp::NfpLevel lvl>
         struct Lvl { static const nfp::NfpLevel value = lvl; };
+    
+        template<class RawShape>
+        inline void correctNfpPosition(nfp::NfpResult<RawShape>& nfp,
+                                       const _Item<RawShape>& stationary,
+                                       const _Item<RawShape>& orbiter)
+        {
+            // The provided nfp is somewhere in the dark. We need to get it
+            // to the right position around the stationary shape.
+            // This is done by choosing the leftmost lowest vertex of the
+            // orbiting polygon to be touched with the rightmost upper
+            // vertex of the stationary polygon. In this configuration, the
+            // reference vertex of the orbiting polygon (which can be dragged around
+            // the nfp) will be its rightmost upper vertex that coincides with the
+            // rightmost upper vertex of the nfp. No proof provided other than Jonas
+            // Lindmark's reasoning about the reference vertex of nfp in his thesis
+            // ("No fit polygon problem" - section 2.1.9)
+
+            auto touch_sh = stationary.rightmostTopVertex();
+            auto touch_other = orbiter.leftmostBottomVertex();
+            auto dtouch = touch_sh - touch_other;
+            auto top_other = orbiter.rightmostTopVertex() + dtouch;
+            auto dnfp = top_other - nfp.second; // nfp.second is the nfp reference point
+            shapelike::translate(nfp.first, dnfp);
+        }
 
         template<class RawShape>
         inline void correctNfpTransform(

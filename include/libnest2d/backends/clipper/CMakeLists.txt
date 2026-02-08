@@ -7,10 +7,14 @@ target_link_libraries(clipperBackend INTERFACE Clipper::Clipper)
 # from Boost geometry
 require_package(Boost VERSION 1.86 REQUIRED COMPONENTS geometry)
 
-if(Boost_INCLUDE_DIRS_FOUND) 
+if(Boost_INCLUDE_DIRS_FOUND OR Boost_INCLUDE_DIRS)
     target_include_directories(clipperBackend INTERFACE $<BUILD_INTERFACE:${Boost_INCLUDE_DIRS}> )
 else()
-    target_link_libraries(clipperBackend INTERFACE Boost::geometry)
+    if (TARGET Boost::geometry)
+        target_link_libraries(clipperBackend INTERFACE Boost::geometry)
+    else() 
+        target_link_libraries(clipperBackend INTERFACE Boost::geometry)
+    endif()
 endif()
 
 list(APPEND LIBNEST2D_SRCFILES 

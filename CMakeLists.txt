@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.22)
 
 project(Libnest2D)
 
@@ -120,7 +120,7 @@ if(NOT LIBNEST2D_HEADER_ONLY)
     set_target_properties(${LIBNAME} PROPERTIES PREFIX "")
     set_target_properties(${LIBNAME} PROPERTIES DEBUG_POSTFIX "d")
     set_target_properties(${LIBNAME} PROPERTIES SOVERSION "1.0")
-    target_link_libraries(${LIBNAME} PUBLIC libnest2d_headeronly)
+    target_link_libraries(${LIBNAME} PUBLIC libnest2d_headeronly wk::core)
     target_compile_definitions(${LIBNAME} PUBLIC LIBNEST2D_STATIC)
     target_sources(${LIBNAME} PRIVATE ${LIBNEST2D_SRCFILES})
     
@@ -128,6 +128,11 @@ if(NOT LIBNEST2D_HEADER_ONLY)
 else()
     target_link_libraries(libnest2d INTERFACE libnest2d_headeronly)
 endif()
+
+# Adding core library
+# Workshop core contains some helper functions to make it cross-platform
+require_package(WorkshopCore REQUIRED)
+target_link_libraries(libnest2d INTERFACE wk::core)
 
 if(LIBNEST2D_BUILD_UNITTESTS)
     enable_testing()

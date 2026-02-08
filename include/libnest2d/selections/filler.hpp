@@ -1,6 +1,7 @@
 #ifndef FILLER_HPP
 #define FILLER_HPP
 
+#include <core/algorithm/sort.hpp>
 #include "selection_boilerplate.hpp"
 
 namespace libnest2d { namespace selections {
@@ -61,7 +62,7 @@ public:
         
         this->template remove_unpackable_items<Placer>(store_, bin, pconfig);
         
-        std::sort(std::execution::par, store_.begin(), store_.end(), sortfunc);
+        wk::sort_parallel(store_.begin(), store_.end(), sortfunc);
 
         Placer placer(bin);
         placer.configure(pconfig);

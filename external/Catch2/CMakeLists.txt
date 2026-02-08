@@ -11,4 +11,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_library(Catch2::Catch2 ALIAS Catch2)
+if (NOT TARGET Catch2::Catch2)
+    add_library(Catch2::Catch2 ALIAS Catch2)
+endif()

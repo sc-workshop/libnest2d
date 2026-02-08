@@ -156,7 +156,7 @@ public:
     {
         dir_ = OptDir::MIN;
         return static_cast<Subclass*>(this)->template optimize<Func, Args...>(
-                    forward<Func>(objectfunction), initvals, bounds... );
+                    std::forward<Func>(objectfunction), initvals, bounds... );
     }
 
     template<class Func, class...Args>

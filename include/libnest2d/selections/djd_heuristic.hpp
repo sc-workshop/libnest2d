@@ -5,6 +5,7 @@
 #include <future>
 #include <atomic>
 #include <functional>
+#include <core/algorithm/sort.hpp>
 
 #include "selection_boilerplate.hpp"
 
@@ -132,7 +133,7 @@ public:
 
         std::copy(first, last, std::back_inserter(store_));
 
-        std::sort(std::execution::par, store_.begin(), store_.end(), [](Item& i1, Item& i2) {
+        wk::sort_parallel(store_.begin(), store_.end(), [](Item& i1, Item& i2) {
             return i1.area() > i2.area();
         });
 

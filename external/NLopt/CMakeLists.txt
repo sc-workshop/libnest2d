@@ -9,8 +9,11 @@ set(NLOPT_TESTS OFF)
 FetchContent_Declare(
     NLopt
     GIT_REPOSITORY https://github.com/stevengj/nlopt.git
-    GIT_TAG v2.9.1
+    GIT_TAG v2.10.0
+    FIND_PACKAGE_ARGS NAMES nlopt
 )
 FetchContent_MakeAvailable(NLopt)
 
-add_library(NLopt::nlopt ALIAS nlopt)
+if (NOT TARGET NLopt::nlopt)
+    add_library(NLopt::nlopt ALIAS nlopt)
+endif()

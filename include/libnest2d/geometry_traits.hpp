@@ -10,7 +10,7 @@
 #include <iterator>
 #include <cmath>
 #include <cstdint>
-#include <execution>
+#include <core/algorithm/sort.hpp>
 
 #include <libnest2d/common.hpp>
 
@@ -1038,7 +1038,7 @@ inline S convexHull(const S& sh, const PathTag&)
         closed = true; pts.pop_back();
     }
     
-    std::sort(std::execution::par, pts.begin(), pts.end(), 
+    wk::sort_parallel(pts.begin(), pts.end(),
               [](const Point& v1, const Point& v2)
     {
         Unit x1 = getX(v1), x2 = getX(v2), y1 = getY(v1), y2 = getY(v2);

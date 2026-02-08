@@ -10,6 +10,7 @@ FetchContent_Declare(
     Boost
     URL https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    FIND_PACKAGE_ARGS NAMES Boost
 )
 
 FetchContent_MakeAvailable(Boost)

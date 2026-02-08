@@ -1,6 +1,7 @@
 #ifndef FIRSTFIT_HPP
 #define FIRSTFIT_HPP
 
+#include <core/algorithm/sort.hpp>
 #include "selection_boilerplate.hpp"
 
 namespace libnest2d { namespace selections {
@@ -98,7 +99,7 @@ public:
             return p1 == p2 ? i1.area() > i2.area() : p1 > p2;
         };
 
-        std::sort(std::execution::par, store_.begin(), store_.end(), sortfunc);
+        wk::sort_parallel(store_.begin(), store_.end(), sortfunc);
 
         auto total = last-first;
         auto makeProgress = [this, &total](Placer& placer, size_t bin_idx) {

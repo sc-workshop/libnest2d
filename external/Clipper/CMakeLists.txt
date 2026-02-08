@@ -1,5 +1,6 @@
 include(FetchContent)
 
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5")
 FetchContent_Declare(
     Clipper
     GIT_REPOSITORY https://github.com/tamasmeszaros/libpolyclipping.git
