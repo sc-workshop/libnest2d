@@ -9,7 +9,7 @@ set(NLOPT_TESTS OFF)
 FetchContent_Declare(
     NLopt
     GIT_REPOSITORY https://github.com/stevengj/nlopt.git
-    GIT_TAG v2.10.0
+    GIT_TAG v2.10.1
     FIND_PACKAGE_ARGS NAMES nlopt
 )
 FetchContent_MakeAvailable(NLopt)
