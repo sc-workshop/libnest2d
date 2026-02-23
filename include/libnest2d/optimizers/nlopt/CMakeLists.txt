@@ -2,7 +2,14 @@ add_library(nloptOptimizer INTERFACE)
 
 require_package(NLopt 1.4 REQUIRED)
 
-target_link_libraries(nloptOptimizer INTERFACE NLopt::nlopt)
+# Local build
+if (TARGET NLopt::nlopt)
+    target_link_libraries(nloptOptimizer INTERFACE NLopt::nlopt)
+    
+else()
+# Package manager build
+    target_link_libraries(nloptOptimizer INTERFACE nlopt)
+endif()
 
 list(APPEND LIBNEST2D_SRCFILES 
     include/libnest2d/optimizers/nlopt/simplex.hpp
