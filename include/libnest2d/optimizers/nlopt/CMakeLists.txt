@@ -1,10 +1,17 @@
 add_library(nloptOptimizer INTERFACE)
 
-require_package(NLopt 1.4 REQUIRED)
+require_package(NLopt CONFIG REQUIRED)
 
-target_link_libraries(nloptOptimizer INTERFACE NLopt::nlopt)
+if(TARGET NLopt::nlopt)
+    target_link_libraries(nloptOptimizer INTERFACE NLopt::nlopt)
+elseif(TARGET nlopt)
+    target_link_libraries(nloptOptimizer INTERFACE nlopt)
+else()
+    message(FATAL_ERROR "Failed to find NLopt target")
+endif()
 
-list(APPEND LIBNEST2D_SRCFILES 
+
+list(APPEND LIBNEST2D_SRCFILES
     include/libnest2d/optimizers/nlopt/simplex.hpp
     include/libnest2d/optimizers/nlopt/subplex.hpp
     include/libnest2d/optimizers/nlopt/genetic.hpp
